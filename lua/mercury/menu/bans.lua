@@ -198,7 +198,7 @@ Just a sec, waiting on the server. ]]
 
  	
  	 
-	timer.Simple(2,function()
+	timer.Simple(3.5,function()
 		DoLayout(CONTAINER)
 		if IsValid(banwindow) then 
 			banwindow.Paint = obanpaint

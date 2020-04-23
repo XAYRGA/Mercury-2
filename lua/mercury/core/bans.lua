@@ -105,6 +105,9 @@ function Mercury.Bans.Add(caller,plr,time,rsn)
 	if type(plr)=="Player" then
 		ban["Name"] = plr:Nick()
 		file.Write("mercury/bans/" .. SAFESID(plr:SteamID()) .. ".txt",util.TableToJSON(ban))
+		timer.Simple(0.1,function()    // takes a few frames for the command to process w/ player entity for some reason :B 
+            plr:Kick(rsn)
+        end)
 	else
 		file.Write("mercury/bans/" .. SAFESID(plr) .. ".txt",util.TableToJSON(ban))
 
@@ -130,6 +133,9 @@ function Mercury.Bans.Add(caller,plr,time,rsn)
  	"vo/spy_laughlong01.mp3",
  	"vo/spy_negativevocalization05.mp3",
  }
+
+local notifyAntiSpam = false
+local notifyAntiSpamTime = 15 //seconds
 
 function Mercury.Bans.ConnectionCheck(steamID,ipAdress, svPassword, clPassword, name, override)
 	if svPassword and svPassword !="" then 
@@ -194,8 +200,14 @@ function Mercury.Bans.ConnectionCheck(steamID,ipAdress, svPassword, clPassword, 
 				Banning Administrator Name: %s .]]
 				banmsg = string.format(banmsg,name,reason,banner)
 			end
-				print("[BANSYS]: CNCT_DENY_BANNED " .. stm .. " " .. banmsg)
-				Mercury.Util.Broadcast({Color(255,1,1,255),name,Color(47,150,255,255), " has tried to connect but is banned for " .. reason})
+				print("[BANSYS]: CNCT_DENY_BANNED " .. stm .. " " .. banmsg .. (notifyAntiSpam and "" or " (chat message suppressed due to antispam)"))
+				if not notifyAntiSpam then
+					Mercury.Util.Broadcast({Color(255,1,1,255),name,Color(47,150,255,255), " has tried to connect but is banned for " .. reason})
+					notifyAntiSpam = true
+					timer.Create("notifyAntiSpamReset", notifyAntiSpamTime, 1, function()
+						notifyAntiSpam = false 
+					end)
+				end
 			else
 				//Mercury.Util.Broadcast({Color(255,1,1,255),name,Color(47,150,255,255), " has connected."})
 
@@ -212,40 +224,73 @@ end)
   
 net.Receive("Mercury:BanData",function(len,p)
 	local args = net.ReadString()
-	if args == "GET_DATA" then 
-		
-		local bdata = {}
-		for k,v in pairs(file.Find("mercury/bans/*.txt","DATA")) do
-			-- Decode table
-			local FI = file.Read("mercury/bans/" .. v,"DATA") -- READ BAN.
-			if !FI then FI="" print("!!! Mercury is unable to decode ban " .. v) end 
-			local BINF = util.JSONToTable(FI)
-			local bkey = USAFESID(v)
-			
-			if BINF then 
-				bkey = string.sub(bkey,0,#bkey-4)
-				BINF.STEAMID = USAFESID(bkey)
-				BINF.TimeRemaining = Mercury.Bans.GetBanDuration(BINF["unbantime"])  
-				if BINF.TimeRemaining < -1 then 
-					BINF.TimeRemaining = "Unbanned."
-				end
+	print(pcall(function() 
+		if args == "GET_DATA" then 
+				local files = file.Find("mercury/bans/*.txt","DATA")
+				local bdata = {}
+				local cnt = 0 
+				local tchunks = math.ceil(#files/100)
+				local chunk = 0
+				print("REQUEST BANS")
+				for k,v in pairs(files) do
+					cnt = cnt + 1
 
-				if BINF["unbantime"]==0 then 
-					BINF.TimeRemaining = "Never"
+
+
+
+					-- Decode table
+					local FI = file.Read("mercury/bans/" .. v,"DATA") -- READ BAN.
+					if !FI then FI="" print("!!! Mercury is unable to decode ban " .. v) end 
+					local BINF = util.JSONToTable(FI)
+					local bkey = USAFESID(v)
+					
+					if BINF then 
+						bkey = string.sub(bkey,0,#bkey-4)
+						BINF.STEAMID = USAFESID(bkey)
+						BINF.TimeRemaining = Mercury.Bans.GetBanDuration(BINF["unbantime"])  
+						if BINF.TimeRemaining < -1 then 
+							BINF.TimeRemaining = "Unbanned."
+						end
+
+						if BINF["unbantime"]==0 then 
+							BINF.TimeRemaining = "Never"
+						end
+					
+						bdata[#bdata + 1] = BINF
+					else 
+						print("!!! Mercury is unable to decode ban " .. v)
+						//p:SendLua([[ Mercury.Menu.ShowWarning("Unable to decode ban ]] .. v .. [[")]])
+					end
+
+					if cnt == 100 then 
+								local r = table.Copy(bdata)
+								chunk = chunk + 1
+								local lastchnk = chunk
+						
+								timer.Simple(0.3*chunk,function()
+									net.Start("Mercury:BanData")
+										net.WriteTable({data = r,tchunks = tchunks,chunkno = chunk})
+									net.Send(p)
+									print("Sending chunk ",lastchnk,"/",tchunks)
+								
+								end)
+
+									cnt = 0 
+									bdata = {}
+					end 
+
 				end
-			
-				bdata[#bdata + 1] = BINF
-			else 
-				print("!!! Mercury is unable to decode ban " .. v)
-				//p:SendLua([[ Mercury.Menu.ShowWarning("Unable to decode ban ]] .. v .. [[")]])
+				local r = table.Copy(bdata)
+					chunk = chunk + 1
+					net.Start("Mercury:BanData")
+										net.WriteTable({data = r,tchunks = tchunks,chunkno = chunk})
+					net.Send(p)
+					print("Last Chunk ",chunk,"/",tchunks)
+
+
+
 			end
-		end
-		net.Start("Mercury:BanData")
-			net.WriteTable({data = bdata,tchunks = 0,chunkno = 0})
-		net.Send(p)
-
-
-	end
+		end))
 
 end)
 
