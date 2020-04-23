@@ -247,7 +247,7 @@ Mercury.Commands.AddCommand(MCMD.Command, MCMD, callfunc)
 Mercury.Commands.AddPrivilege("god")
 
 local function GodPrivilegeCheck(ply)
-    return ply:HasPrivilege("god")
+    return ply:HasPrivilege("god",true)
 end
 
 -- Decals
