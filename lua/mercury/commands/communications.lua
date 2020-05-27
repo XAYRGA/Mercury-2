@@ -197,7 +197,7 @@ function callfunc(caller,args)
 
 	if args[1]._MercuryUserData["muteinfo"] then 
 
-			args[1]._MercuryUserData["gaginfo"] = {permagagged = false}
+			args[1]._MercuryUserData["muteinfo"] = {permamuted = false}
 			Mercury.UDL.SaveSingle(args[1])
 	end 
 
