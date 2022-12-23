@@ -61,6 +61,11 @@ Mercury.Commands.AddCommand(MCMD.Command, MCMD, callfunc)
 
 
 
+Mercury.Commands.AddPrivilege("lblame")
+
+
+
+
 MCMD = {
     ["Command"] = "lblame",
     ["Verb"] = "output blame",
@@ -161,6 +166,28 @@ function MCMD.GenerateMenu(frame)
 
 end
 Mercury.Commands.AddCommand(MCMD.Command, MCMD, callfunc)
+
+
+local function lblamePrivcheck(ply)
+    return ply:HasPrivilege("lblame",true)
+end 
+
+MCMD = {
+    ["Command"] = "constraints",
+    ["Verb"] = "output blame",
+    ["RconUse"] = true,
+    ["Useage"] = "",
+    ["UseImmunity"] =   false ,
+    ["HasMenu"] = false ,
+    ["Category"] = "Player Management",
+    ["PlayerTarget"] = false ,
+    ["AllowWildcard"] = false,
+    ["UseCustomPrivCheck"] = true,
+    ["PrivCheck"] = lblamePrivcheck
+
+}
+Mercury.Commands.AddCommand(MCMD.Command, MCMD, callfunc)
+
 
 MCMD = {
     ["Command"] = "myblame",

@@ -638,7 +638,7 @@ function callfunc(caller, args)
         -- Set the new health
         local health = tonumber(args[2])
         args[1]:SetHealth(health)
-        return true, "", true, {Mercury.Config.Colors.Server, caller, Mercury.Config.Colors.Default, " has set the hp of ", args[1], " to ", Mercury.Config.Colors.Arg, health, Mercury.Config.Colors.Default, "."}
+        return true, "", true, {Mercury.Config.Colors.Server, caller, Mercury.Config.Colors.Default, " has set the hp of ", args[1], " to ", Mercury.Config.Colors.Arg, tostring(health), Mercury.Config.Colors.Default, "."}
     end
     
     -- Finish!

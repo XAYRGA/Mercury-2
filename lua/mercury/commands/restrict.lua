@@ -9,7 +9,7 @@ function RestrictPrivilegeCheck(caller)
 	return caller:HasPrivilege("managerestrictions")
 end
 function HasNoLimits(caller)
-	return caller:HasPrivilege("nolimits") 
+	return caller:HasPrivilege("nolimits", true) 
 end
 -- restrict Swep
 local MCMD = Mercury.Commands.CreateTable("restrictswep", "", true, "<swep class> <restrict add / remove> <rank name>", false, false, false, "Config", true, RestrictPrivilegeCheck)
@@ -121,14 +121,13 @@ MCMD = {
 	["UseCustomPrivCheck"] = true,
 	["PlayerTarget"] = true,
 	["PrivCheck"] = HasNoLimits,
-	["AllowWildcard"] = false
+	["AllowWildcard"] = true
 }
 
 function callfunc(caller,args)
 	args[1].NoLimits = true
-	for k,v in pairs(player.GetAll()) do
-		v:SendLua([[surface.PlaySound("vo/citadel/gman_exit01.wav")]])
-	end
 	return true,""
 end
 Mercury.Commands.AddCommand(MCMD.Command, MCMD, callfunc)
+Mercury.Commands.AddCommand("restrictions", MCMD, callfunc)
+Mercury.Commands.AddCommand("nolimits", MCMD, callfunc)

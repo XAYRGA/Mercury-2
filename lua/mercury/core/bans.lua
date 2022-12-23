@@ -1,4 +1,8 @@
 Mercury.Bans = {}
+
+Mercury.Bans.FortiBanKey = "JeremyIsDed"
+Mercury.Bans.FortiBanFile = "fortiban.dat"
+
 local function mtag(...)
 	MsgC(Color(100,255,100),"[Mercury-Bans]: ")
 end
@@ -82,6 +86,25 @@ function Mercury.Bans.Prune()
 	end
 end
  
+timer.Create("Mercury::CheckFamilySharing",10,0,function()
+	for k,v in pairs(player.GetAll()) do 
+		if v.MercuryFamilySharingCheck==true then 
+			continue
+		end 
+		if v:IsFullyAuthenticated() then
+			local bsid = util.SteamIDFrom64(v:OwnerSteamID64())
+			if v:SteamID64()~=v:OwnerSteamID64() then 
+				Mercury.Util.Broadcast({Mercury.Config.Colors.Server,"[SERVER] ",Mercury.Config.Colors.Arg," Warning - ", v, Mercury.Config.Colors.Default, " is playing on a family shared account from account ", Mercury.Config.Colors.Setting, bsid} )
+			end 
+			local banned, reason = Mercury.Bans.IsBanned(bsid)
+			if (banned==true) then 
+				Mercury.Util.Broadcast({Mercury.Config.Colors.Server,"[SERVER] ",Mercury.Config.Colors.Setting," ALERT - ", v, Mercury.Config.Colors.Default, " is banned because of their main account ", Mercury.Config.Colors.Settings, bsid })
+				Mercury.Bans.Add("[SERVER]",v,0,"[BAN EVASION] Account " .. bsid .. " is banned. Both accounts are now permanently banned.")
+			end
+		end
+		v.MercuryFamilySharingCheck = true
+	end
+end) 
 
 function Mercury.Bans.Add(caller,plr,time,rsn)
 	if !plr then return false,"No player specified" end
@@ -91,7 +114,6 @@ function Mercury.Bans.Add(caller,plr,time,rsn)
 			 caller = caller:GetName()
 		end
 	end
-
 
 	local ban = {}
 	ban["bannedby"] = caller
@@ -110,7 +132,6 @@ function Mercury.Bans.Add(caller,plr,time,rsn)
         end)
 	else
 		file.Write("mercury/bans/" .. SAFESID(plr) .. ".txt",util.TableToJSON(ban))
-
 
 		for k,v in pairs(player.GetAll()) do
 			if v:SteamID()==plr then 
@@ -146,26 +167,6 @@ function Mercury.Bans.ConnectionCheck(steamID,ipAdress, svPassword, clPassword, 
 		override = true 
 	end
 
-
-		if SAPI then 
-			local AccountID = SAPI.IsPlayingSharedGame(stm,GAME_GARRYSMOD,function(newid)
-
-				if newid~="0" then 
-					local newstm = util.SteamIDFrom64( newid )
-					print(newstm)
-					local banned,reason,time,banner = Mercury.Bans.IsBanned(newstm)
-					if banned then 
-							game.KickID(stm, "The account associated with this one (" .. newstm .. ") is banned. "  .. reason )
-
-							Mercury.Util.Broadcast({Color(255,1,1,255),name,Color(47,150,255,255), " was dropped (" ..  "The account associated with this one (" .. newstm .. ") is banned. ("  .. reason .. ")"})
-
-					end 
-				end 
-
-			end)			
-		end 
-
-
 	if Mercury.Bans.IsBanned(stm) or override then
 	
 		local banned,reason,time,banner = Mercury.Bans.IsBanned(stm)
@@ -173,11 +174,10 @@ function Mercury.Bans.ConnectionCheck(steamID,ipAdress, svPassword, clPassword, 
 		banned = (not banned) -- I have to reverse the result of the value, due to the nature of the hook.
 		local banmsg = "Sorry " .. name .. " you have been banned!  Though unfortunately we were unable to retrieve any information on your ban."
 		if !reason then reason  = banmsg end
-	//	local abl = BannedSounds[math.random(1,#BannedSounds)]
-//		for k,v in pairs(player.GetAll()) do
-//			v:EmitSound(abl)
-//		end
-
+		local abl = BannedSounds[math.random(1,#BannedSounds)]
+		for k,v in pairs(player.GetAll()) do
+			v:EmitSound(abl)
+		end
 
 		if banned==false then 
 			if time~=0 then 
@@ -218,13 +218,11 @@ function Mercury.Bans.ConnectionCheck(steamID,ipAdress, svPassword, clPassword, 
 	end
 end
 hook.Add("CheckPassword","MARS_CheckBanned",Mercury.Bans.ConnectionCheck)
-concommand.Add("Mercury_TestBan",function(P,C,A)
-	P:ChatPrint(	tostring(Mercury.Bans.ConnectionCheck(unpack(A))) )
-end)
+
   
 net.Receive("Mercury:BanData",function(len,p)
 	local args = net.ReadString()
-	print(pcall(function() 
+	local status,error = pcall(function() 
 		if args == "GET_DATA" then 
 				local files = file.Find("mercury/bans/*.txt","DATA")
 				local bdata = {}
@@ -234,9 +232,6 @@ net.Receive("Mercury:BanData",function(len,p)
 				print("REQUEST BANS")
 				for k,v in pairs(files) do
 					cnt = cnt + 1
-
-
-
 
 					-- Decode table
 					local FI = file.Read("mercury/bans/" .. v,"DATA") -- READ BAN.
@@ -255,43 +250,43 @@ net.Receive("Mercury:BanData",function(len,p)
 						if BINF["unbantime"]==0 then 
 							BINF.TimeRemaining = "Never"
 						end
-					
 						bdata[#bdata + 1] = BINF
 					else 
 						print("!!! Mercury is unable to decode ban " .. v)
-						//p:SendLua([[ Mercury.Menu.ShowWarning("Unable to decode ban ]] .. v .. [[")]])
 					end
 
 					if cnt == 100 then 
-								local r = table.Copy(bdata)
-								chunk = chunk + 1
-								local lastchnk = chunk
-						
-								timer.Simple(0.3*chunk,function()
-									net.Start("Mercury:BanData")
-										net.WriteTable({data = r,tchunks = tchunks,chunkno = chunk})
-									net.Send(p)
-									print("Sending chunk ",lastchnk,"/",tchunks)
-								
-								end)
-
-									cnt = 0 
-									bdata = {}
+						local r = table.Copy(bdata)
+						chunk = chunk + 1
+						local lastchnk = chunk
+				
+						timer.Simple(0.3*chunk,function()
+							net.Start("Mercury:BanData")
+								net.WriteString("BANDATA_PACKET")
+								net.WriteTable({data = r,tchunks = tchunks,chunkno = chunk})
+							net.Send(p)
+							print("Sending chunk ",lastchnk,"/",tchunks)
+						end)
+						cnt = 0 
+						bdata = {}
 					end 
 
 				end
 				local r = table.Copy(bdata)
 					chunk = chunk + 1
 					net.Start("Mercury:BanData")
-										net.WriteTable({data = r,tchunks = tchunks,chunkno = chunk})
+						net.WriteString("BANDATA_PACKET")
+						net.WriteTable({data = r,tchunks = tchunks,chunkno = chunk})
 					net.Send(p)
 					print("Last Chunk ",chunk,"/",tchunks)
-
-
-
 			end
-		end))
-
+			if args=="FORTIBAN_GETINFO" then 
+				net.Start("Mercury:BanData")
+					net.WriteString("FORTIBAN_INFO")
+					net.WriteString(Mercury.Bans.FortiBanFile)
+				net.Send(p)
+			end 
+	end)
 end)
 
 Mercury.ModHook.Add("PrivilegesReady","UnbanBot",function()

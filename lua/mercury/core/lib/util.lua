@@ -21,6 +21,28 @@ function Mercury.Util.SendMessage(cli,table)
 	net.Send(cli)
 end
 
+function Mercury.Util.Cipher(str, key, iv)
+        local sum = 0
+        local keyT = {}
+        for i=1, #key do 
+            local ky = string.byte(key[i])
+            sum = sum + ky
+            keyT[i-1] = ky
+        end 
+        
+        local chars = {}
+        for i=1, #str do 
+            chars[i] = string.byte(str[i])
+        end
+        local strc = ""
+        math.randomseed(sum + iv + #str)
+        for k,v in pairs(chars) do 
+            chars[k] = bit.bxor(chars[k], keyT[k%(#keyT +1)], math.random(1,255))
+            strc = strc .. string.char(chars[k])
+        end
+        return strc    
+end 
+
 function Mercury.Util.StringArguments(strang)
 	
     local sptab = string.Explode(" ",strang)

@@ -252,6 +252,7 @@ end
 
 -- Decals
 local MCMD = Mercury.Commands.CreateTable("decals", "cleaned up the decals", true, "", true, false, true, "Utility")
+
 function callfunc(caller,args)
     for k,v in pairs(player.GetAll()) do
         v:SendLua([[RunConsoleCommand("r_cleardecals")]])
@@ -339,6 +340,7 @@ Mercury.Commands.AddCommand(MCMD.Command, MCMD, callfunc)
 
 -- God
 local MCMD = Mercury.Commands.CreateTable("god", "enabled godmode for", true, "<player>", true, true, true, "Utility", true, GodPrivilegeCheck)
+MCMD.AllowWildcard = true
 function callfunc(caller,args)
     args[1]:GodEnable()
 

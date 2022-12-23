@@ -36,7 +36,7 @@ hook.Add("PlayerSay","MercuryComm",function(XAD, txt,tea )
 	if etab[1]=="!aboutmercury" then 
 		
 		for k,v in pairs(player.GetAll()) do 
-				Mercury.Util.SendMessage(v,{Color(255,255,255) ,"Mercury Administration System ~ version (HungryHungry)HOTEL 9.3 Created by " , Color(255,0,255) , " FreezeBug " , Color(255,255,255), " with help from ", Color(255,0,0), " Rusketh, Mythic, Merc, and !cake" })
+				Mercury.Util.SendMessage(v,{Color(255,255,255) ,"Mercury Administration System ~ version 2.0(H) (r2014) Created by " , Color(255,0,255) , " FreezeBug " , Color(255,255,255), " with help from ", Color(255,0,0), " Rusketh, Mythic, Merc, and !cake" })
 		end
 		return ""
 	end
@@ -197,7 +197,7 @@ function callfunc(caller,args)
 
 	if args[1]._MercuryUserData["muteinfo"] then 
 
-			args[1]._MercuryUserData["muteinfo"] = {permamuted = false}
+			args[1]._MercuryUserData["gaginfo"] = {permagagged = false}
 			Mercury.UDL.SaveSingle(args[1])
 	end 
 
